@@ -12,7 +12,7 @@ import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js
 import { createThread, sendThreadMessage, deleteInteractionMessage, createWebHook, getThreadHistory } from './discord-thread.js';
 import { askAssistantQuestion } from './genai.js';
 
-
+let botReady = false;
 // Handle messages sent inside a thread created by the bot
 const client = new Client({
     intents: [
@@ -24,6 +24,7 @@ const client = new Client({
 // Set up ready listener
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}`);
+    botReady = true;
 });
 // Set up messageCreate listener
 client.on('messageCreate', async (message) => {
@@ -49,7 +50,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
 // Store for in-progress games. In production, you'd want to use a DB
-// const activeGames = {};
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
 */
@@ -100,32 +100,21 @@ app.post('/interactions', async function (req, res) {
             if (!threadId) {
                 const thread = await createThread(channelId, question);
                 threadId = thread.id;
-                // deleteInteraction = true;
             }
-            // const answer = "answeraa";
+
             await deleteInteractionMessage(token);
-            // if (deleteInteraction) {
-            // }
-            // else {
-            //     await res.send({
-            //         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            //         data: {
-            //             content: answer
-            //         }
-            //     });
-            // }
-            // Create a message in the thread with the response
+
             return sendThreadMessage(webHook, threadId, answer);
 
-            // return res.send({
-            //     type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-            //     // type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            //     // data: {
-            //     //     // Fetches a random emoji to send from a helper function
-            //     //     content: 'hello world ',
-            //     // },
-            // });
         }
+    }
+});
+
+app.get('/health', (req, res) => {
+    if (botReady) {
+        res.status(200).send('OK');
+    } else {
+        res.status(500).send('Bot not ready');
     }
 });
 
