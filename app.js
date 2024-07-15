@@ -58,9 +58,11 @@ app.post('/interactions', async function (req, res) {
     const { type, id, data, token } = req.body;
     let channelId = req.body.channel_id;
     let threadId = null;
-    if (req.body.channel.owner_id === process.env.APP_ID && req.body.channel.parent_id !== null) {
-        channelId = req.body.channel.parent_id;
-        threadId = req.body.channel.id;
+    if (req.body.channel) {
+        if (req.body.channel.owner_id === process.env.APP_ID && req.body.channel.parent_id !== null) {
+            channelId = req.body.channel.parent_id;
+            threadId = req.body.channel.id;
+        }
     }
     let webHook = null;
 
