@@ -15,14 +15,28 @@ const DND_COMMAND = {
     options: [
         {
             type: 3,
-            name: 'dnd_question',
-            description: 'The question to ask',
+            name: 'question',
+            description: 'The DnD question to ask',
             required: true,
         },
     ],
     type: 1,
 };
 
-const ALL_COMMANDS = [DND_COMMAND];
+const SW_COMMAND = {
+    name: 'sw',
+    description: 'Ask a Savage Worlds question',
+    options: [
+        {
+            type: 3,
+            name: 'question',
+            description: 'The Savage Worlds question to ask',
+            required: true,
+        },
+    ],
+    type: 1,
+};
+
+const ALL_COMMANDS = [DND_COMMAND, SW_COMMAND];
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

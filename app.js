@@ -13,6 +13,29 @@ import { createThread, sendThreadMessage, deleteInteractionMessage, createWebHoo
 import { askAssistantQuestion } from './genai.js';
 
 let botReady = false;
+
+const DND_INSTRUCTIONS = "You are an assistant who provides reference information for how the tabletop game dungeons and dragons operates. You search the given pdf documents for information, summarize responses, and then below the response, return up to two of the most relevant quotes from the pdf. Answer concisely if possible.";
+const SAVAGE_WORLDS_INSTRUCTIONS = "You are an assistant who provides reference information for how the tabletop game savage worlds operates. You search the given pdf documents for information, summarize responses, and then below the response, return the most relevant two quotes from the pdf.";
+
+const RPG_ASSISTANTS = {
+    "dnd": {
+        "assistant_id": process.env.DND_PLAYER_ASSISTANT_ID,
+        "instructions": DND_INSTRUCTIONS,
+        "short_name": "[DnD]"
+    },
+    "sw": {
+        "assistant_id": process.env.SAVAGE_WORLDS_ASSISTANT_ID,
+        "instructions": SAVAGE_WORLDS_INSTRUCTIONS,
+        "short_name": "[SW]"
+    }
+};
+
+let RPG_SHORT_NAMES = {}
+for (const rpg in RPG_ASSISTANTS) {
+    let rpg_short_name = RPG_ASSISTANTS[rpg]["short_name"];
+    RPG_SHORT_NAMES[rpg_short_name] = RPG_ASSISTANTS[rpg];
+}
+
 // Handle messages sent inside a thread created by the bot
 const client = new Client({
     intents: [
@@ -33,10 +56,22 @@ client.on('messageCreate', async (message) => {
         const threadId = message.channel.id;
         const webHookChannelId = message.channel.parentId;
         const webHook = await createWebHook(webHookChannelId);
-        const threadHistory = await getThreadHistory(threadId, message.channel.name);
-        await message.channel.sendTyping();
-        const answer = await askAssistantQuestion(message.content, threadHistory);
-        await sendThreadMessage(webHook, threadId, answer);
+        let shortName = message.channel.name.split(" ")[0];
+        let threadResponse = "Unable to determine which RPG assistant created the thread.";
+        if (shortName in RPG_SHORT_NAMES) {
+            console.log(`[THREAD_RESPONSE] ${shortName} ${question}`);
+            let assistantId = RPG_SHORT_NAMES[shortName]["assistant_id"];
+            let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
+            let initialQuestion = message.channel.name.replace(`${shortName} `, "");
+            const threadHistory = await getThreadHistory(threadId, initialQuestion);
+            const interval = setInterval(async () => {
+                await message.channel.sendTyping();
+            }, 5000);
+            // await message.channel.sendTyping();
+            threadResponse = await askAssistantQuestion(message.content, threadHistory, assistantId, instructions);
+            clearInterval(interval);
+        }
+        await sendThreadMessage(webHook, threadId, threadResponse);
     }
 });
 
@@ -84,9 +119,13 @@ app.post('/interactions', async function (req, res) {
     if (type === InteractionType.APPLICATION_COMMAND) {
         const { name } = data;
 
-        if (name === 'dnd') {
+        if (name in RPG_ASSISTANTS) {
+            let assistantId = RPG_ASSISTANTS[name]["assistant_id"];
+            let instructions = RPG_ASSISTANTS[name]["instructions"];
+            let shortName = RPG_ASSISTANTS[name]["short_name"];
             // Make the name of the thread the question that was asked
             const question = data.options[0].value;
+            console.log(`/${name} ${question}`);
             await res.send({
                 type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
             });
@@ -94,13 +133,14 @@ app.post('/interactions', async function (req, res) {
             let deleteInteraction = false;
             // if in a thread get the history
             if (threadId) {
-                threadHistory = await getThreadHistory(threadId, req.body.channel.name);
+                let initialQuestion = req.body.channel.name.replace(shortName, "");
+                threadHistory = await getThreadHistory(threadId, initialQuestion);
             }
             // Send the request to OpenAI
-            const answer = await askAssistantQuestion(question, threadHistory);
+            const answer = await askAssistantQuestion(question, threadHistory, assistantId, instructions);
             // else create a thread
             if (!threadId) {
-                const thread = await createThread(channelId, question);
+                const thread = await createThread(channelId, `${shortName} ${question}`);
                 threadId = thread.id;
             }
 

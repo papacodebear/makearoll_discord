@@ -3,10 +3,8 @@ import OpenAI from "openai";
 
 const openai = new OpenAI();
 openai.apiKey = process.env.OPENAI_API_KEY;
-const DND_INSTRUCTIONS = "You are an assistant who provides reference information for how the tabletop game dungeons and dragons operates. You search the given pdf documents for information, summarize responses, and then below the response, return the most relevant two quotes from the pdf.";
 
-
-export async function askAssistantQuestion(message, context = [], assistantId = process.env.DND_PLAYER_ASSISTANT_ID) {
+export async function askAssistantQuestion(message, context = [], assistantId, instructions) {
     const openAiThread = await openai.beta.threads.create();
 
     context.push(["user", message]);
@@ -20,11 +18,12 @@ export async function askAssistantQuestion(message, context = [], assistantId = 
             }
         );
     }
+
     let run = await openai.beta.threads.runs.createAndPoll(
         openAiThread.id,
         {
             assistant_id: assistantId,
-            instructions: DND_INSTRUCTIONS
+            instructions: instructions
         }
     );
     const messages = await openai.beta.threads.messages.list(

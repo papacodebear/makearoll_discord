@@ -26,13 +26,13 @@ export async function createThread(channelId, threadName) {
     return thread;
 }
 
-export async function getThreadHistory(threadId, threadTitle) {
+export async function getThreadHistory(threadId, initialQuestion) {
     const fetchMessagesEndpoint = `channels/${threadId}/messages`;
     const fetchMessagesBody = { params: { limit: 100 } };
     const messagesResponse = await DiscordRequest(fetchMessagesEndpoint, fetchMessagesBody);
 
     const messages = await messagesResponse.json();
-    let history = [["user", threadTitle]];
+    let history = [["user", initialQuestion]];
     for (let i = messages.length - 1; i >= 0; i--) {
         let message = messages[i];
         let role = ((message.author.bot) ? "assistant" : "user");
