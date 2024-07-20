@@ -64,12 +64,12 @@ client.on('messageCreate', async (message) => {
             let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
             let initialQuestion = message.channel.name.replace(`${shortName} `, "");
             const threadHistory = await getThreadHistory(threadId, initialQuestion);
-            const interval = setInterval(async () => {
-                await message.channel.sendTyping();
-            }, 5000);
-            // await message.channel.sendTyping();
+            // const interval = setInterval(async () => {
+            //     await message.channel.sendTyping();
+            // }, 5000);
+            await message.channel.sendTyping();
             threadResponse = await askAssistantQuestion(message.content, threadHistory, assistantId, instructions);
-            clearInterval(interval);
+            // clearInterval(interval);
         }
         await sendThreadMessage(webHook, threadId, threadResponse);
     }
