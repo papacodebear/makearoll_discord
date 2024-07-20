@@ -59,7 +59,7 @@ client.on('messageCreate', async (message) => {
         let shortName = message.channel.name.split(" ")[0];
         let threadResponse = "Unable to determine which RPG assistant created the thread.";
         if (shortName in RPG_SHORT_NAMES) {
-            console.log(`[THREAD_RESPONSE] ${shortName} ${question}`);
+            console.log(`[THREAD_RESPONSE] ${shortName} ${message.content}`);
             let assistantId = RPG_SHORT_NAMES[shortName]["assistant_id"];
             let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
             let initialQuestion = message.channel.name.replace(`${shortName} `, "");
