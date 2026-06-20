@@ -1,0 +1,10 @@
+[Unit]
+Description=Pull and redeploy makearoll_discord if there are upstream changes
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Adjust these two paths to match the actual clone location on this Pi
+WorkingDirectory=/home/pi/makearoll_discord
+ExecStart=/home/pi/makearoll_discord/deploy/deploy.sh

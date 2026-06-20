@@ -5,7 +5,7 @@
   "main": "app.js",
   "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "start": "node app.js",
@@ -15,14 +15,17 @@
   "author": "Shay DeWael",
   "license": "MIT",
   "dependencies": {
-    "discord-interactions": "^3.2.0",
-    "discord.js": "^14.15.3",
-    "dotenv": "^16.0.3",
-    "express": "^4.22.1",
+    "discord-interactions": "^4.4.0",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "node-fetch": "^3.3.2",
-    "openai": "^4.52.2"
+    "openai": "^6.44.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "nodemon": "^3.1.14"
+  },
+  "overrides": {
+    "undici": "^6.27.0"
   }
 }

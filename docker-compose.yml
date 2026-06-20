@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    container_name: makearoll-discord
+    restart: unless-stopped
+    env_file: .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ngrok:
+    image: ngrok/ngrok:3
+    container_name: makearoll-ngrok
+    restart: unless-stopped
+    env_file: .env
+    command: ["http", "app:3000", "--domain=${NGROK_DOMAIN}"]
+    depends_on:
+      app:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
