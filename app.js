@@ -45,7 +45,7 @@ const client = new Client({
     ]
 });
 // Set up ready listener
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log(`Logged in as ${client.user.tag}`);
     botReady = true;
 });
