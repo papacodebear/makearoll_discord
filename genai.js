@@ -1,34 +1,19 @@
-import 'dotenv/config';
 import OpenAI from "openai";
 
 const openai = new OpenAI();
-openai.apiKey = process.env.OPENAI_API_KEY;
 
-export async function askAssistantQuestion(message, context = [], assistantId, instructions) {
-    const openAiThread = await openai.beta.threads.create();
+export async function askAssistantQuestion(message, context = [], instructions, vectorStoreId) {
+    const input = [
+        { role: "system", content: instructions },
+        ...context.map(([role, content]) => ({ role, content })),
+        { role: "user", content: message },
+    ];
 
-    context.push(["user", message]);
-    for (const item of context) {
-        const [role, content] = item;
-        const message = await openai.beta.threads.messages.create(
-            openAiThread.id,
-            {
-                role: role,
-                content: content
-            }
-        );
-    }
+    const response = await openai.responses.create({
+        model: "gpt-5.6-luna",
+        tools: [{ type: "file_search", vector_store_ids: [vectorStoreId] }],
+        input,
+    });
 
-    let run = await openai.beta.threads.runs.createAndPoll(
-        openAiThread.id,
-        {
-            assistant_id: assistantId,
-            instructions: instructions
-        }
-    );
-    const messages = await openai.beta.threads.messages.list(
-        run.thread_id
-    );
-    return messages.data[0]["content"][0]["text"]["value"];
+    return response.output_text;
 }
-

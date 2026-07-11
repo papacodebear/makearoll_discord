@@ -19,12 +19,12 @@ const SAVAGE_WORLDS_INSTRUCTIONS = "You are an assistant who provides reference 
 
 const RPG_ASSISTANTS = {
     "dnd": {
-        "assistant_id": process.env.DND_PLAYER_ASSISTANT_ID,
+        "vector_store_id": process.env.DND_PLAYER_VECTOR_STORE_ID,
         "instructions": DND_INSTRUCTIONS,
         "short_name": "[DnD]"
     },
     "sw": {
-        "assistant_id": process.env.SAVAGE_WORLDS_ASSISTANT_ID,
+        "vector_store_id": process.env.SAVAGE_WORLDS_VECTOR_STORE_ID,
         "instructions": SAVAGE_WORLDS_INSTRUCTIONS,
         "short_name": "[SW]"
     }
@@ -60,7 +60,7 @@ client.on('messageCreate', async (message) => {
         let threadResponse = "Unable to determine which RPG assistant created the thread.";
         if (shortName in RPG_SHORT_NAMES) {
             console.log(`[THREAD_RESPONSE] ${shortName} ${message.content}`);
-            let assistantId = RPG_SHORT_NAMES[shortName]["assistant_id"];
+            let vectorStoreId = RPG_SHORT_NAMES[shortName]["vector_store_id"];
             let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
             let initialQuestion = message.channel.name.replace(`${shortName} `, "");
             const threadHistory = await getThreadHistory(threadId, initialQuestion);
@@ -68,7 +68,7 @@ client.on('messageCreate', async (message) => {
             //     await message.channel.sendTyping();
             // }, 5000);
             await message.channel.sendTyping();
-            threadResponse = await askAssistantQuestion(message.content, threadHistory, assistantId, instructions);
+            threadResponse = await askAssistantQuestion(message.content, threadHistory, instructions, vectorStoreId);
             // clearInterval(interval);
         }
         await sendThreadMessage(webHook, threadId, threadResponse);
@@ -120,7 +120,7 @@ app.post('/interactions', async function (req, res) {
         const { name } = data;
 
         if (name in RPG_ASSISTANTS) {
-            let assistantId = RPG_ASSISTANTS[name]["assistant_id"];
+            let vectorStoreId = RPG_ASSISTANTS[name]["vector_store_id"];
             let instructions = RPG_ASSISTANTS[name]["instructions"];
             let shortName = RPG_ASSISTANTS[name]["short_name"];
             // Make the name of the thread the question that was asked
@@ -137,7 +137,7 @@ app.post('/interactions', async function (req, res) {
                 threadHistory = await getThreadHistory(threadId, initialQuestion);
             }
             // Send the request to OpenAI
-            const answer = await askAssistantQuestion(question, threadHistory, assistantId, instructions);
+            const answer = await askAssistantQuestion(question, threadHistory, instructions, vectorStoreId);
             // else create a thread
             if (!threadId) {
                 const thread = await createThread(channelId, `${shortName} ${question}`);
