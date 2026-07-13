@@ -100,7 +100,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), (req, res
 
     // Create webhook
     if (channelId) {
-        webHook = await createWebHook(channelId);
+        webHook = createWebHook(channelId);
     }
     /**
      * Handle slash command requests
@@ -116,7 +116,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), (req, res
             // Make the name of the thread the question that was asked
             const question = data.options[0].value;
             console.log(`/${name} ${question}`);
-            await res.send({
+            res.send({
                 type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
             });
             let threadHistory = [];
@@ -124,17 +124,17 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), (req, res
             // if in a thread get the history
             if (threadId) {
                 let initialQuestion = req.body.channel.name.replace(shortName, "");
-                threadHistory = await getThreadHistory(threadId, initialQuestion);
+                threadHistory = getThreadHistory(threadId, initialQuestion);
             }
             // Send the request to OpenAI
-            const answer = await askAssistantQuestion(question, threadHistory, instructions, vectorStoreId);
+            const answer = askAssistantQuestion(question, threadHistory, instructions, vectorStoreId);
             // else create a thread
             if (!threadId) {
-                const thread = await createThread(channelId, `${shortName} ${question}`);
+                const thread = createThread(channelId, `${shortName} ${question}`);
                 threadId = thread.id;
             }
 
-            await deleteInteractionMessage(token);
+            deleteInteractionMessage(token);
 
             return sendThreadMessage(webHook, threadId, answer);
 
