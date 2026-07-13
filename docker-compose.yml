@@ -1,5 +1,5 @@
 services:
-  app:
+  makearoll-discord:
     build:
       context: .
       args:
