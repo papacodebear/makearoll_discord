@@ -90,6 +90,7 @@ app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 */
 app.post('/interactions', async function (req, res) {
     // Interaction type and data
+    console.log("in /interactions")
     const { type, id, data, token } = req.body;
     let channelId = req.body.channel_id;
     let threadId = null;
@@ -108,6 +109,8 @@ app.post('/interactions', async function (req, res) {
     /**
      * Handle verification requests
      */
+    console.log("handling verification request");
+    console.log(`${type}`)
     if (type === InteractionType.PING) {
         return res.send({ type: InteractionResponseType.PONG });
     }
