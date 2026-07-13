@@ -14,6 +14,7 @@ export async function askAssistantQuestion(message, context = [], instructions, 
         tools: [{ type: "file_search", vector_store_ids: [vectorStoreId] }],
         input,
     });
+    console.log(`response.output_text: ${response.output_text}`);
 
     return response.output_text;
 }
