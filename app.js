@@ -59,7 +59,7 @@ const client = new Client({
 });
 // Set up ready listener
 client.once('clientReady', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    console.log(`Logged in as ${client.user.tag} (version ${process.env.GIT_SHA || 'unknown'})`);
     botReady = true;
 });
 // Set up messageCreate listener

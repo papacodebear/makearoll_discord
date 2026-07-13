@@ -1,6 +1,9 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_SHA: "${GIT_SHA:-unknown}"
     container_name: makearoll-discord
     restart: unless-stopped
     env_file: .env

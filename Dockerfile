@@ -1,5 +1,8 @@
 FROM node:24-alpine
 
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
