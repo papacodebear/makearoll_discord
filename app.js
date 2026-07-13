@@ -5,7 +5,8 @@ import {
     InteractionResponseType,
     InteractionResponseFlags,
     MessageComponentTypes,
-    ButtonStyleTypes
+    ButtonStyleTypes,
+    verifyKeyMiddleware
 } from 'discord-interactions';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
