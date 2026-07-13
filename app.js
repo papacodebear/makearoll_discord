@@ -15,6 +15,17 @@ import { askAssistantQuestion } from './genai.js';
 
 let botReady = false;
 
+// Discord thread names are capped at 100 characters, but the genai assistant
+// needs the full question, so keep the untruncated text around by thread ID.
+const DISCORD_THREAD_NAME_MAX_LENGTH = 100;
+const threadQuestions = new Map();
+
+function buildThreadName(shortName, question) {
+    const name = `${shortName} ${question}`;
+    if (name.length <= DISCORD_THREAD_NAME_MAX_LENGTH) return name;
+    return name.slice(0, DISCORD_THREAD_NAME_MAX_LENGTH - 1) + "…";
+}
+
 const DND_INSTRUCTIONS = "You are an assistant who provides reference information for how the tabletop game dungeons and dragons operates. You search the given pdf documents for information, summarize responses, and then below the response, return up to two of the most relevant quotes from the pdf. Answer concisely if possible.";
 const SAVAGE_WORLDS_INSTRUCTIONS = "You are an assistant who provides reference information for how the tabletop game savage worlds operates. You search the given pdf documents for information, summarize responses, and then below the response, return the most relevant two quotes from the pdf.";
 
@@ -63,7 +74,7 @@ client.on('messageCreate', async (message) => {
             console.log(`[THREAD_RESPONSE] ${shortName} ${message.content}`);
             let vectorStoreId = RPG_SHORT_NAMES[shortName]["vector_store_id"];
             let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
-            let initialQuestion = message.channel.name.replace(`${shortName} `, "");
+            let initialQuestion = threadQuestions.get(threadId) ?? message.channel.name.replace(`${shortName} `, "");
             const threadHistory = await getThreadHistory(threadId, initialQuestion);
             // const interval = setInterval(async () => {
             //     await message.channel.sendTyping();
@@ -124,15 +135,16 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async (re
             let deleteInteraction = false;
             // if in a thread get the history
             if (threadId) {
-                let initialQuestion = req.body.channel.name.replace(shortName, "");
+                let initialQuestion = threadQuestions.get(threadId) ?? req.body.channel.name.replace(shortName, "");
                 threadHistory = await getThreadHistory(threadId, initialQuestion);
             }
             // Send the request to OpenAI
             const answer = await askAssistantQuestion(question, threadHistory, instructions, vectorStoreId);
             // else create a thread
             if (!threadId) {
-                const thread = await createThread(channelId, `${shortName} ${question}`);
+                const thread = await createThread(channelId, buildThreadName(shortName, question));
                 threadId = thread.id;
+                threadQuestions.set(threadId, question);
             }
 
             await deleteInteractionMessage(token);
