@@ -10,15 +10,16 @@ import {
 } from 'discord-interactions';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
-import { createThread, sendThreadMessage, deleteInteractionMessage, createWebHook, getThreadHistory } from './discord-thread.js';
+import { createThread, sendThreadMessage, sendChannelMessage, getThreadStarterMessage, deleteInteractionMessage, createWebHook, getThreadHistory } from './discord-thread.js';
 import { askAssistantQuestion } from './genai.js';
 
 let botReady = false;
 
-// Discord thread names are capped at 100 characters, but the genai assistant
-// needs the full question, so keep the untruncated text around by thread ID.
+// Discord thread names are capped at 100 characters. When a question doesn't
+// fit, the truncated name ends in an ellipsis and the full question is instead
+// posted as the thread's first message (see sendChannelMessage below), making
+// Discord itself the durable store for the full question.
 const DISCORD_THREAD_NAME_MAX_LENGTH = 100;
-const threadQuestions = new Map();
 
 function buildThreadName(shortName, question) {
     const name = `${shortName} ${question}`;
@@ -74,8 +75,11 @@ client.on('messageCreate', async (message) => {
             console.log(`[THREAD_RESPONSE] ${shortName} ${message.content}`);
             let vectorStoreId = RPG_SHORT_NAMES[shortName]["vector_store_id"];
             let instructions = RPG_SHORT_NAMES[shortName]["instructions"];
-            let initialQuestion = threadQuestions.get(threadId) ?? message.channel.name.replace(`${shortName} `, "");
-            const threadHistory = await getThreadHistory(threadId, initialQuestion);
+            const wasTruncated = message.channel.name.endsWith("…");
+            let initialQuestion = wasTruncated
+                ? await getThreadStarterMessage(threadId)
+                : message.channel.name.replace(`${shortName} `, "");
+            const threadHistory = await getThreadHistory(threadId, initialQuestion, wasTruncated);
             // const interval = setInterval(async () => {
             //     await message.channel.sendTyping();
             // }, 5000);
@@ -135,16 +139,22 @@ app.post('/interactions', verifyKeyMiddleware(process.env.PUBLIC_KEY), async (re
             let deleteInteraction = false;
             // if in a thread get the history
             if (threadId) {
-                let initialQuestion = threadQuestions.get(threadId) ?? req.body.channel.name.replace(shortName, "");
-                threadHistory = await getThreadHistory(threadId, initialQuestion);
+                const wasTruncated = req.body.channel.name.endsWith("…");
+                let initialQuestion = wasTruncated
+                    ? await getThreadStarterMessage(threadId)
+                    : req.body.channel.name.replace(shortName, "");
+                threadHistory = await getThreadHistory(threadId, initialQuestion, wasTruncated);
             }
             // Send the request to OpenAI
             const answer = await askAssistantQuestion(question, threadHistory, instructions, vectorStoreId);
             // else create a thread
             if (!threadId) {
-                const thread = await createThread(channelId, buildThreadName(shortName, question));
+                const threadName = buildThreadName(shortName, question);
+                const thread = await createThread(channelId, threadName);
                 threadId = thread.id;
-                threadQuestions.set(threadId, question);
+                if (threadName.endsWith("…")) {
+                    await sendChannelMessage(threadId, question);
+                }
             }
 
             await deleteInteractionMessage(token);
