@@ -28,8 +28,8 @@ export async function createThread(channelId, threadName) {
 
 export async function getThreadHistory(threadId, initialQuestion) {
     const fetchMessagesEndpoint = `channels/${threadId}/messages`;
-    const fetchMessagesBody = { params: { limit: 100 } };
-    const messagesResponse = await DiscordRequest(fetchMessagesEndpoint, fetchMessagesBody);
+    const fetchMessagesOptions = { params: { limit: 100 } };
+    const messagesResponse = await DiscordRequest(fetchMessagesEndpoint, fetchMessagesOptions);
 
     const messages = await messagesResponse.json();
     let history = [["user", initialQuestion]];
@@ -47,7 +47,7 @@ export async function getThreadHistory(threadId, initialQuestion) {
 export async function createWebHook(channelId) {
     const webHookEndpoint = `channels/${channelId}/webhooks`;
     const getWebHookOptions = { method: 'GET' };
-    const currentWebHooksResponse = await DiscordRequest(webHookEndpoint, getWebHookOptions, true);
+    const currentWebHooksResponse = await DiscordRequest(webHookEndpoint, getWebHookOptions);
     const currentWebHooks = await currentWebHooksResponse.json();
     let webHookExists = false;
     let webHook = null;
